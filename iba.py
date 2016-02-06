@@ -56,77 +56,34 @@ def parse_ascii(ascii):
 	
 	return {'points':points, 'next_offset':next_offset, 'data':block_data}
 	
-def parse_float_channel(offset):
-
-	ch_data = []
-	total_frames = 0
-	
-	while offset < len(data) and offset != 0:
-		points = hex_to_int(data[offset+0], data[offset+1])
-		ch_next_offset = hex_to_int(data[offset+2], data[offset+3], data[offset+4], data[offset+5])
-	
+def parse_channels_data():	
+	for ch_index in range(len(channels)):
+		channels[ch_index]['data'] = []
+		total_frames = 0
 		size = 5
-		
-		for index in range(points):
-			point_offset = offset + 6 + index*size
-			frames = hex_to_int(data[point_offset+0])
-			value = hex_to_float(data[point_offset+1], data[point_offset+2], data[point_offset+3], data[point_offset+4])
-			ch_data.append({'frames':frames, 'value':value})
-			
-			total_frames += frames
-		
-		offset = ch_next_offset
-		
-	
-	return ch_data
-	
-def parse_boolean_channel(offset):
-	ch_data = []
-	
-	while offset < len(data) and offset != 0:
-		points = hex_to_int(data[offset+0], data[offset+1])
-		ch_next_offset = hex_to_int(data[offset+2], data[offset+3], data[offset+4], data[offset+5])
-	
-		size = 2
-			
-		for index in range(points):
-			point_offset = offset + 6 + index*size
-			#frames = hex_to_int(data[point_offset+0])
-			#value = hex_to_float(data[point_offset+1], data[point_offset+2], data[point_offset+3], data[point_offset+4])
-			frames = 1
-			value = 0
-			ch_data.append({'frames':frames, 'value':value})
-		
-		offset = ch_next_offset
-		
-	return ch_data
-	
-	
-	for ch_index in range(0, len(channels)):
-		ch_points = hex_to_int(data[offset+0], data[offset+1])
-		ch_offset = hex_to_int(data[offset+2], data[offset+3], data[offset+4], data[offset+5])
-		channels[ch_index]['offsets'].append(ch_offset)
-		
 		if 'digchannel' in channels[ch_index]:
 			size = 2
-			for index in range(ch_points):
+			
+		offset = channels[ch_index]['offset']
+		while offset < len(data) and offset != 0:
+			points = hex_to_int(data[offset+0], data[offset+1])
+			ch_next_offset = hex_to_int(data[offset+2], data[offset+3], data[offset+4], data[offset+5])
+			
+			for index in range(points):
 				point_offset = offset + 6 + index*size
-#				frames = hex_to_int(data[point_offset+0])
-#				value = hex_to_float(data[point_offset+1], data[point_offset+2], data[point_offset+3], data[point_offset+4])
-#				channels[ch_index]['data'].append({'frames':frames, 'value':value})
-		else:
-			size = 5
-			for index in range(ch_points):
-				point_offset = offset + 6 + index*size
-				frames = hex_to_int(data[point_offset+0])
-				value = hex_to_float(data[point_offset+1], data[point_offset+2], data[point_offset+3], data[point_offset+4])
+				if size == 5:
+					frames = hex_to_int(data[point_offset+0])
+					value = hex_to_float(data[point_offset+1], data[point_offset+2], data[point_offset+3], data[point_offset+4])
+				else:
+					frames = hex_to_int(data[point_offset+0], data[point_offset+1] & ~ (1 << 6 | 1 << 7))
+					value = data[point_offset+1] & (1 << 7) > 0
+					
 				channels[ch_index]['data'].append({'frames':frames, 'value':value})
-		
-		offset += 6 + ch_points*size
-		
+				total_frames += frames
+			
+			offset = ch_next_offset
 	
-	print('Next frame offset: {}'.format(offset))
-	return offset
+	return 0
 	
 # Load iba dat file
 f = open('sample.dat', 'rb')
@@ -174,12 +131,9 @@ for ch_index in range(len(channels)):
 		channels[ch_index]['offset'] = offset
 		
 	offset += 6 + ch_points*size
-	
+
+
 # Parse data for channels
-for ch_index in range(len(channels)):
-	if 'digchannel' in channels[ch_index]:
-		channels[ch_index]['data'] =  parse_boolean_channel(channels[ch_index]['offset'])
-	else:
-		channels[ch_index]['data'] = parse_float_channel(channels[ch_index]['offset'])
+parse_channels_data()
 	
 exit(0)
