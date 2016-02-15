@@ -1,5 +1,7 @@
 import sys
 import struct
+from datetime import datetime
+from datetime import timedelta
 
 class channel:
 	def __init__ (self, id, name, base, scale, frame):
@@ -18,9 +20,11 @@ class channel:
 		count *= self.scale
 		while self.count + count >= self.frame:
 			if self.base == 2:
-				self.values.append("{0:d}".format(round((self.sum*self.count + (self.frame - self.count)*value)/self.frame) ))
+				#self.values.append("{0:d}".format(round((self.sum*self.count + (self.frame - self.count)*value)/self.frame) ))
+				self.values.append(round((self.sum*self.count + (self.frame - self.count)*value)/self.frame))
 			else:
-				self.values.append("{0:e}".format((self.sum*self.count + (self.frame - self.count)*value)/self.frame ))
+				#self.values.append("{0:e}".format((self.sum*self.count + (self.frame - self.count)*value)/self.frame ))
+				self.values.append((self.sum*self.count + (self.frame - self.count)*value)/self.frame)
 
 			count -= self.frame - self.count
 			self.count = 0
@@ -147,10 +151,12 @@ class iba:
 				offset = ch_next_offset
 	
 	def get_data(self):
+	
+		start_time = datetime.strptime(self.header['starttime'], '%d.%m.%Y %H:%M:%S.%f')
 		
 		s = ''
 		for t in range(int(int(self.header['frames'])/self.frame)):
-			s += str(t) + ';'
+			s += str(start_time + timedelta(microseconds=t*self.frame*10000)) + ';'
 			for c in range(len(self.channels)):
 				s += str(self.channels[c].values[t]) + ';'
 			s += '\n'
