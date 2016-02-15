@@ -2,6 +2,7 @@ import sys
 import struct
 from datetime import datetime
 from datetime import timedelta
+import glob
 
 class channel:
 	def __init__ (self, id, name, base, scale, frame):
@@ -48,6 +49,9 @@ class iba:
 
 	def hex_to_float(self, h1=0, h2=0, h3=0, h4=0):
 		return struct.unpack('<f', bytes([h1, h2, h3, h4]))[0]	
+		
+	def starttime(self):
+		return datetime.strptime(self.header['starttime'], '%d.%m.%Y %H:%M:%S.%f')
 		
 	def parse_file(self):
 		# Load iba dat file
@@ -162,12 +166,17 @@ class iba:
 			s += '\n'
 		
 		return s
+	
 
-t = iba('sample.dat', 100)
+# Parse dat files
+csv_dir = "G:/severstal/csv/"
+dat_files = glob.glob("G:/severstal/pda/2015.06/pda*.dat")
 
-f = open('results.csv','w')
-f.write(t.get_data())
-f.close()
-
+for i in range(len(dat_files)):
+	t = iba(dat_files[i], 100)
+	csv_filename = csv_dir + t.starttime().strftime("%Y%m%d_%H%M%S.csv")
+	f = open(csv_filename, 'w')
+	f.write(t.get_data())
+	f.close()
 	
 exit(0)
